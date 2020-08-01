@@ -3,7 +3,19 @@
   "configurations": [
     {
       "type": "node",
-      "name": "vscode-jest-tests",
+      "request": "launch",
+      "name": "Start Entry",
+      "program": "${workspaceFolder}/node_modules/ts-node/dist/bin",
+      "args": [
+        "src/entry"
+      ],
+      "skipFiles": [
+        "<node_internals>/**"
+      ]
+    },
+    {
+      "type": "node",
+      "name": "Jest Unit Test",
       "request": "launch",
       "args": [
         "--runInBand"

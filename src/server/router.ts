@@ -2,7 +2,7 @@
 import { createTypedODataServer } from "@odata/server";
 import { Router } from "express";
 import { ConnectionOptions } from "typeorm";
-import { ServiceRegistryEntities } from "../models";
+import { ServiceInstanceAfterCreationHook, ServiceInstanceBeforeCreationHook, ServiceRegistryEntities } from "../models";
 
 
 /**
@@ -11,8 +11,13 @@ import { ServiceRegistryEntities } from "../models";
  * @param conn connection options
  */
 export const createServiceRegistryRouter = async (conn: Partial<ConnectionOptions>): Promise<Router> => {
-  conn.entities = ServiceRegistryEntities
-  const s = await createTypedODataServer(conn, ...ServiceRegistryEntities)
+  conn.entities = ServiceRegistryEntities;
+  const s = await createTypedODataServer(
+    conn,
+    ServiceInstanceAfterCreationHook,
+    ServiceInstanceBeforeCreationHook,
+    ...ServiceRegistryEntities
+  );
   return s.create();
 };
 

@@ -18,7 +18,10 @@ export class ServiceInstance extends BaseODataModel {
   @ODataColumn()
   InstancePort: number;
 
-  @ODataColumn({ nullable: true, default: "/health" })
+  @ODataColumn({ nullable: true, default: "http" })
+  InstanceProtocol: string;
+
+  @ODataColumn({ nullable: true, default: "health" })
   InstanceHealthPath: string;
 
 }

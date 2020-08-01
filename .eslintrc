@@ -28,6 +28,9 @@
       {
         "SwitchCase": 1
       }
+    ],
+    "@typescript-eslint/ban-ts-comment": [
+      0
     ]
   }
 }
