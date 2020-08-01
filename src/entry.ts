@@ -1,9 +1,10 @@
+import { ConnectionOptions } from "@odata/server";
 import express from "express";
 import basicAuth from "express-basic-auth";
+import { Server } from "http";
 import { createServiceRegistryRouter } from "./server";
 
-export const run = async (port = 30009) => {
-
+export const createServiceRegistryApp = async (connection?: Partial<ConnectionOptions>): Promise<express.Express> => {
   const app = express();
 
   app.get('/health', req => {
@@ -22,13 +23,28 @@ export const run = async (port = 30009) => {
     }));
   }
 
-  app.use("/sd", await createServiceRegistryRouter({
-    name: "sd_registry_conn", type: "sqljs", synchronize: true
-  }));
+  const defaultOpt = {
+    name: "sd_registry_conn",
+    type: "sqljs",
+    synchronize: true
+  };
 
-  const listener = app.listen(parseInt(process.env.PORT) || port, () => {
-    console.log(`started at port: ${listener.address()['port']}`);
+  const opt = Object.assign(defaultOpt, connection);
+
+  app.use("/sd", await createServiceRegistryRouter(opt));
+
+  return app;
+};
+
+export const run = async (port = 30009): Promise<Server> => {
+
+  const app = await createServiceRegistryApp();
+
+  const server = app.listen(parseInt(process.env.PORT) || port, () => {
+    console.log(`started at port: ${server.address()['port']}`);
   });
+
+  return server;
 
 };
 
