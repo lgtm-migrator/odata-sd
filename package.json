@@ -20,8 +20,8 @@
   },
   "dependencies": {
     "@newdash/newdash": "^5.12.0",
-    "@odata/client": "^2.8.0",
-    "@odata/server": "^0.2.22",
+    "@odata/client": "^2.8.1",
+    "@odata/server": "^0.2.23",
     "express": "^4.17.1",
     "express-basic-auth": "^1.2.0",
     "node-fetch": "^2.6.0",
