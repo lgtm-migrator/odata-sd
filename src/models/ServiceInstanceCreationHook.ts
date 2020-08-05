@@ -1,4 +1,4 @@
-import { afterSave, beforeCreate, HookContext, HookProcessor } from "@odata/server";
+import { afterSave, beforeCreate, commitTransaction, createTransactionContext, HookContext, HookProcessor } from "@odata/server";
 import fetch from "node-fetch";
 import { ServiceInstance } from ".";
 
@@ -29,40 +29,44 @@ export class ServiceInstanceBeforeCreationHook extends HookProcessor<ServiceInst
 export class ServiceInstanceAfterCreationHook extends HookProcessor<ServiceInstance> {
 
   async execute(hookContext: HookContext<ServiceInstance>): Promise<void> {
-    switch (hookContext.context.method) {
-      case "POST":
-        const instance = hookContext.data;
-        const key = getKey(instance);
-        if (!healthCheckStorage.has(key)) {
+    const instance = hookContext.data;
 
-          const url = getURI(instance);
-          const timer = setInterval(async () => {
+    if (instance) {
+
+      const key = getKey(instance);
+
+      if (!healthCheckStorage.has(key)) {
+
+        const url = getURI(instance);
+        const timer = setInterval(async () => {
+          try {
+            await fetch(url);
+          } catch (error) {
+            console.error(`check url: '${url}' failed`);
+
+            // error happened
             try {
-              await fetch(url);
+              const service = hookContext.getService(ServiceInstance);
+              const ctx = createTransactionContext();
+              await service.delete(instance.ObjectID, ctx);
+              await commitTransaction(ctx);
+              clearInterval(healthCheckStorage.get(key));
+              healthCheckStorage.delete(key);
+              console.error(`remove service instance: '${getKey(instance)}'`);
             } catch (error) {
-              console.error(`check url: '${url}' failed`);
-
-              // error happened
-              try {
-                await hookContext.getConnection().getRepository(ServiceInstance).delete(instance);
-                clearInterval(healthCheckStorage.get(key));
-                healthCheckStorage.delete(key);
-                console.error(`remove service instance: '${getKey(instance)}'`);
-              } catch (error) {
-                console.error(`remove service instance failed: '${getKey(instance)}'`);
-              }
-
+              console.error(`remove service instance failed: '${getKey(instance)}'`);
             }
-          }, 5 * 1000);
 
-          healthCheckStorage.set(key, timer);
+          }
+        }, 5 * 1000);
 
-          console.info(`register service instance: ${key}`);
-        }
-        break;
-      default:
-        break;
+        healthCheckStorage.set(key, timer);
+
+        console.info(`register service instance: ${key}`);
+      }
+
     }
-  }
 
+
+  }
 }
