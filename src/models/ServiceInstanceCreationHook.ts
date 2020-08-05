@@ -40,7 +40,7 @@ export class ServiceInstanceAfterCreationHook extends HookProcessor<ServiceInsta
         const url = getURI(instance);
         const timer = setInterval(async () => {
           try {
-            await fetch(url);
+            await checkInstance(instance);
           } catch (error) {
             console.error(`check url: '${url}' failed`);
 
