@@ -1,4 +1,4 @@
-import { afterSave, beforeCreate, HookContext, HookProcessor } from "@odata/server";
+import { afterCreate, beforeCreate, commitTransaction, createTransactionContext, HookContext, HookProcessor } from "@odata/server";
 import fetch from "node-fetch";
 import { ServiceInstance } from ".";
 
@@ -25,44 +25,45 @@ export class ServiceInstanceBeforeCreationHook extends HookProcessor<ServiceInst
 
 }
 
-@afterSave(ServiceInstance)
+@afterCreate(ServiceInstance)
 export class ServiceInstanceAfterCreationHook extends HookProcessor<ServiceInstance> {
 
   async execute(hookContext: HookContext<ServiceInstance>): Promise<void> {
-    switch (hookContext.context.method) {
-      case "POST":
-        const instance = hookContext.data;
-        const key = getKey(instance);
-        if (!healthCheckStorage.has(key)) {
 
-          const url = getURI(instance);
-          const timer = setInterval(async () => {
-            try {
-              await fetch(url);
-            } catch (error) {
-              console.error(`check url: '${url}' failed`);
+    const instance = hookContext.data;
+    const key = getKey(instance);
+    if (!healthCheckStorage.has(key)) {
 
-              // error happened
-              try {
-                await hookContext.getConnection().getRepository(ServiceInstance).delete(instance);
-                clearInterval(healthCheckStorage.get(key));
-                healthCheckStorage.delete(key);
-                console.error(`remove service instance: '${getKey(instance)}'`);
-              } catch (error) {
-                console.error(`remove service instance failed: '${getKey(instance)}'`);
-              }
+      const url = getURI(instance);
+      const timer = setInterval(async () => {
+        try {
 
-            }
-          }, 5 * 1000);
+          await fetch(url);
 
-          healthCheckStorage.set(key, timer);
+        } catch (error) {
+          console.error(`check url: '${url}' failed`);
 
-          console.info(`register service instance: ${key}`);
+          // error happened
+          try {
+            const tx = createTransactionContext();
+
+            await hookContext.getService(ServiceInstance).delete(instance.ObjectID, tx);
+            await commitTransaction(tx);
+            clearInterval(healthCheckStorage.get(key));
+            healthCheckStorage.delete(key);
+
+            console.error(`remove service instance: '${getKey(instance)}'`);
+          } catch (error) {
+            console.error(`remove service instance failed: '${getKey(instance)}'`);
+          }
+
         }
-        break;
-      default:
-        break;
-    }
-  }
+      }, 5 * 1000);
 
+      healthCheckStorage.set(key, timer);
+
+      console.info(`register service instance: ${key}`);
+    }
+
+  }
 }

@@ -19,9 +19,9 @@
     "node": ">=10"
   },
   "dependencies": {
-    "@newdash/newdash": "^5.12.0",
-    "@odata/client": "^2.8.1",
-    "@odata/server": "^0.2.23",
+    "@newdash/newdash": "^5.12.2",
+    "@odata/client": "^2.10.0",
+    "@odata/server": "^0.2.26",
     "express": "^4.17.1",
     "express-basic-auth": "^1.2.0",
     "node-fetch": "^2.6.0",
