@@ -29,41 +29,43 @@ export class ServiceInstanceBeforeCreationHook extends HookProcessor<ServiceInst
 export class ServiceInstanceAfterCreationHook extends HookProcessor<ServiceInstance> {
 
   async execute(hookContext: HookContext<ServiceInstance>): Promise<void> {
-
     const instance = hookContext.data;
-    const key = getKey(instance);
-    if (!healthCheckStorage.has(key)) {
 
-      const url = getURI(instance);
-      const timer = setInterval(async () => {
-        try {
+    if (instance) {
 
-          await fetch(url);
+      const key = getKey(instance);
 
-        } catch (error) {
-          console.error(`check url: '${url}' failed`);
+      if (!healthCheckStorage.has(key)) {
 
-          // error happened
+        const url = getURI(instance);
+        const timer = setInterval(async () => {
           try {
-            const tx = createTransactionContext();
-
-            await hookContext.getService(ServiceInstance).delete(instance.ObjectID, tx);
-            await commitTransaction(tx);
-            clearInterval(healthCheckStorage.get(key));
-            healthCheckStorage.delete(key);
-
-            console.error(`remove service instance: '${getKey(instance)}'`);
+            await checkInstance(instance);
           } catch (error) {
-            console.error(`remove service instance failed: '${getKey(instance)}'`);
+            console.error(`check url: '${url}' failed`);
+
+            // error happened
+            try {
+              const service = hookContext.getService(ServiceInstance);
+              const ctx = createTransactionContext();
+              await service.delete(instance.ObjectID, ctx);
+              await commitTransaction(ctx);
+              clearInterval(healthCheckStorage.get(key));
+              healthCheckStorage.delete(key);
+              console.error(`remove service instance: '${getKey(instance)}'`);
+            } catch (error) {
+              console.error(`remove service instance failed: '${getKey(instance)}'`);
+            }
+
           }
+        }, 5 * 1000);
 
-        }
-      }, 5 * 1000);
+        healthCheckStorage.set(key, timer);
 
-      healthCheckStorage.set(key, timer);
+        console.info(`register service instance: ${key}`);
+      }
 
-      console.info(`register service instance: ${key}`);
     }
-
   }
+
 }

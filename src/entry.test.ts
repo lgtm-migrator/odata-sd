@@ -1,3 +1,4 @@
+import "@odata/client/lib/polyfill";
 import { Server } from "http";
 import { createServiceRegistryApp } from "./entry";
 
